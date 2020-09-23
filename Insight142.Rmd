@@ -1,0 +1,359 @@
+---
+title: "**TALLER: UNA GUÍA PRÁCTICA PARA USAR LOS DATOS DEL BARÓMETRO DE LAS AMÉRICAS**"
+output:
+  html_document:
+    df_print: paged
+---
+
+# **¿QUIÉNES CONFÍAN EN LOS MEDIOS EN LAS AMÉRICAS**
+# REPLICACIÓN DEL INSIGHTS 142
+
+*22 de octubre de 2020*
+
+# ABSTRACT
+
+En este taller vamos a replicar el informe 142 de la Serie Perspectivas desde el Barómetro de las Américas. Se puede ver aquí la lista de los [Insights](https://www.vanderbilt.edu/lapop-espanol/perspectivas/). El informe 142 se puede conseguir en español [aquí](https://www.vanderbilt.edu/lapop/insights/IO942es.pdf).
+Se asume que los participantes tienen un conocimiento básico de R y RStudio. A lo largo de este taller, explicaremos, paso a paso, los procedimientos en RStudio para producir las tablas y gráficos que se ven en los informes. En estos informes, estas tablas y gráficos han sido producidos en STATA. 
+
+En resumen, este informe presenta el promedio de confianza en los medios de comunicación en las Américas y dos modelos explicativos de la confianza en los medios usando factores socioeconómicos y factores políticos.
+
+# SOBRE LA BASE DE DATOS
+
+Los datos que vamos a usar deben citarse de la siguiente manera:
+Fuente: Barómetro de las Américas por el Proyecto de Opinión Pública de América Latina (LAPOP), wwww.LapopSurveys.org.
+
+Pueden descargar los datos de manera libre en [Acceso](http://datasets.americasbarometer.org/database/login.php)
+
+En este enlace, se puede registrar o entrar como "Free User". En el buscador, se puede ingresar el texto "merge". Ahí se tendrá acceso a la base de datos completa "2004-2018 Grand Merge Free" en versión para STATA. Se descarga la base de datos en formato zip, la que se descomprime en formato .dta.
+
+Debido a que estas bases de datos son muy grandes (42MB en formato zip), para este taller vamos a trabajar con una versión reducida, que incluye los países y años seleccionados en el informe. Esta base de datos se puede descargar [aquí](INCLUIR LINK)
+
+
+# INSTALANDO LOS PAQUETES NECESARIAS EN R
+
+```{r message=FALSE, warning=FALSE}
+library(rio) # Para importar los datos
+library(ggplot2) # Para hacer gráficos tipo ggplot
+library(Rmisc) # Para poder usar la función summarySE
+library(descr) # Para poder usar la función crosstab y compmeans
+```
+
+# LEYENDO LA BASE DE DATOS EN R
+*Si se trabajara con la base de datos descargada del repositorio de LAPOP*
+
+Se carga la base de datos en STATA en R en un dataframe "lapopmerge". Tenga en cuenta que la base de datos tiene que estar en su directorio de trabajo (working directory). Para este Insights se analiza la ronda 2016/17, por lo que se selecciona esta ronda en el merge total. Se crea un nuevo dataframe "lapop".
+Luego, también se elimina las observaciones de los países que no se analizan en este reporte por no tener datos de la variable sobre medios de comunicación. Se elimina el dataframe del Merge original. 
+Finalmente el dataframe "lapop"  incluye solo la ronda 2016/17 y los países de análisis.
+```{r}
+lapopmerge <- import("LAPOP_Merge_2004_2018.dta")
+lapop <- subset(lapopmerge, wave==2016)
+lapop <- subset(lapop, pais<=23 | pais>=40)
+rm(lapopmerge)
+```
+Como en este taller estamos trabajando con la versión simplificada de la base de datos, directamente leemos esta base de datos en RStudio
+```{r}
+lapop <- import("lapop16.dta")
+```
+La autora indica que para este reporte se ha usado la pregunta: B37: ¿Hasta qué punto tiene usted confianza en los medios de comunicación? 
+
+# GRÁFICO 1
+La escala original de la variable iba de 1 a 7, donde 1 indica “Nada” y 7 “Mucho”. Para reproducir la Figura 1 primero se tiene que recodificar la variable dependiente b37 en una nueva variable b37r. El texto indica que la recodificación es como sigue: valores entre 1 y 4 tienen un nuevo valor de 0 y valores entre 5 y 7, un nuevo valor de 100.
+```{r}
+library(car) # Para poder usar el comando recode
+lapop$b37r <- recode(lapop$b37, "1:4=0 ; 5:7=100")
+table(lapop$b37r)
+```
+Al momento de leer la base de datos en R, este programa importa las variables como numéricas. La variable "pais" se tiene que convertir en una variable de tipo "factor" y se tiene que etiquetar.
+```{r}
+lapop$pais = as.factor(lapop$pais)
+levels(lapop$pais) <- c("México", "Guatemala", "El Salvador", "Honduras",
+                            "Nicaragua","Costa Rica", "Panamá", "Colombia", 
+                            "Ecuador", "Bolivia", "Perú", "Paraguay", "Chile",
+                            "Uruguay", "Brasil", "Venezuela", "Argentina", 
+                            "Rep. Dom.", "Haití", "Jamaica", "Estados Unidos", 
+                            "Canada")
+levels(lapop$pais)
+table(lapop$pais)
+table(lapop$pais, lapop$year)
+```
+Estos datos, sin embargo, no toman en cuenta el efecto del diseño muestral. En este análisis se asume que todos los países tienen el mismo peso, a pesar que cada país tenga un tamaño de muestra diferente. LAPOP incluye en sus bases de datos una variable que es un factor de ponderación ("weight1500"), que fija un tamaño de muestra de 1,500 casos como peso de cada país.
+Para tomar en cuenta esta ponderación se puede usar, por ejemplo, el siguiente código para ver el tamaño de muestra ponderada por país:
+```{r}
+crosstab(lapop$pais, lapop$year, weight=lapop$weight1500, plot=F)
+```
+
+*Sin tomar en cuenta el efecto de diseño*
+Para reproducir el gráfico 1 sin tomar en cuenta el efecto de diseño, se calculan los datos de % e intervalos de confianza de la variable b37r por cada país y se guarda en un objeto "df"
+```{r}
+df <- summarySE(data=lapop, measurevar="b37r", groupvar="pais", na.rm=T)
+```
+Con estos datos, se construye el gráfico 1 con el siguiente código. Tenemos que tomar en cuenta que en algunos países los % no son similares porque este código no incluye las ponderaciones muestrales.
+```{r}
+graf1 <- ggplot(df, aes(x=reorder(pais, b37r), y=b37r)) +
+  geom_bar(width=0.5, fill="purple", colour="black", stat="identity") +
+  geom_errorbar(aes(ymin=b37r-ci, ymax=b37r+ci), width= 0.2) +
+  geom_text(aes(label=paste(round(b37r, 1), "%")), hjust=-0.8, size=2) +
+  xlab("") +
+  ylab("Confianza en los medios de comunicación (%)")  +
+  coord_flip()
+graf1
+```
+
+*Para tomar en cuenta el efecto de diseño*
+Para reproducir el gráfico 1, tomando en cuenta el diseño muestral se tiene que seguir el siguiente código para la creación de un objeto con los datos ponderados. Este código permite incluir la variable "weight1500".
+```{r}
+tab.b37r <- as.data.frame(compmeans(lapop$b37r, lapop$pais, lapop$weight1500, plot=FALSE))
+tab.b37r
+```
+Luego, este dataframe se tiene que adecuar para poder producir el gráfico. Se cambia el nombre de las variables y se agregan los datos de "pais", "error estándar" y "intervalo de confianza". También se elimina la fila 23 "Total" que produce el código anterior.
+```{r}
+varnames <- c("media", "n", "sd")
+colnames(tab.b37r) <- varnames
+tab.b37r$pais <- row.names(tab.b37r)
+tab.b37r$err.st <- tab.b37r$sd/sqrt(tab.b37r$n)
+tab.b37r$ci <- tab.b37r$err.st*1.96
+tab.b37r <- tab.b37r[-23, ]
+tab.b37r
+```
+Con este dataframe se puede producir el gráfico con los datos ponderados.
+```{r}
+graf1_pond <- ggplot(tab.b37r, aes(x=reorder(pais, media), y=media)) +
+  geom_bar(width=0.5, fill="purple", colour="black", stat="identity")+
+  geom_errorbar(aes(ymin=media-ci, ymax=media+ci), width=0.2)+
+  geom_text(aes(label=paste(round(media, 1), "%")), hjust=-0.8, size=2)+
+  xlab("") + ylab("Confianza en los medios de comunicación (%)")+
+  coord_flip()
+graf1_pond
+```
+
+# FACTORES SOCIODEMOGRÁFICOS Y CONFIANZA EN LOS MEDIOS DE COMUNICACIÓN
+
+La autora indica que para el gráfico 2 va a usar un modelo de regresión de mínimos cuadrados ordinarios (OLS), usando seis características demográficas y socioeconómicas como predictores de la confianza reportada en los medios de comunicación
+
+# GRÁFICO 2
+
+Para repreducir el segundo gráfico se tiene que recodificar las variables independientes para que varíen entre 0 y 1.
+```{r}
+lapop$edrr <- lapop$edr/3
+lapop$size <- (5-lapop$tamano)/4
+lapop$edadr <- (lapop$edad -1)/5
+lapop$tono <- (lapop$colorr-1)/10
+lapop$nse <- (lapop$quintall-1)/4
+```
+Luego de recodificar las variables, se tiene que correr el modelo usando como variable dependiente b37 y las variables recodificadas como variables independientes. Para la creación de este gráfico, también se tiene que tomar en cuenta la ponderación. Para esto usamos la libreria "survey" y guardamos las características del diseño en un objeto "lapop.design".
+```{r}
+library(survey) # Para poder definir las características del diseño muestral
+lapop.design<-svydesign(ids =~upm, strata =~ estratopri, weights = ~weight1500, nest=TRUE, data=lapop)
+```
+El modelo de regresión incluye variables dummy por país, aunque no se mostrarán en el gráfico. Para calcular los coeficientes tomando en cuenta el diseño muestral, se usa el comando "svyglm". Se guardan los resultados en un objeto "modelo1.pond".
+```{r}
+modelo1.pond <- svyglm(b37 ~ mujer + edrr + size +
+                        edadr + tono + nse + factor(pais), design=lapop.design)
+modelo1.pond
+```
+Para visualizar mejor los resultados, podemos usar el siguiente código:
+```{r}
+library(jtools) # Para poder usar el comando siguiente
+export_summs(modelo1.pond)
+```
+Para reproducir el gráfico 2, podemos usar el siguiente código:
+```{r}
+plot_summs(modelo1.pond, coefs=c("Mujer" = "mujer", 
+                                 "Nivel de educación" = "edrr", 
+                                 "Tamaño del lugar" = "size", 
+                                 "Cohortes de edad" = "edadr",
+                                 "Tono de piel más oscuro" = "tono", 
+                                 "Nivel de riqueza" = "nse"))
+```
+
+# EXPLICACIONES ADICIONALES DE LA CONFIANZA EN LOS MEDIOS DE COMUNICACIÓN
+
+Como indica la autora: "El Gráfico 3 incorpora al modelo la confianza interpersonal, asistencia a los servicios religiosos, la atención que le prestan a las noticias, uso de internet, interés en política, identificación con un partido político, satisfacción con la democracia, y el voto en las elecciones presidenciales más recientes. De forma similar al Gráfico 2, los efectos estimados que aparecen en el Gráfico 3 son calculados con un modelo de regresión de mínimos cuadrados".
+
+# GRÁFICO 3
+
+Para reproducir el gráfico 3, primero se tienen que recodificar las variables independientes.
+```{r}
+lapop$it1r <- (4 - lapop$it1) / 3
+lapop$q5a01 <- recode(lapop$q5a, "1:4=1; 5=0")
+lapop$satisdem <- (4 - lapop$pn4) / 3
+lapop$useinternet <- (5 - lapop$www1) / 4
+lapop$newsattn <- (5 - lapop$gi0) / 4
+lapop$polinterest <- (4 - lapop$pol1) / 3
+lapop$idpty <- recode(lapop$vb10, "1=1; 2=0")
+lapop$voted <- recode(lapop$vb2, "1=1; 2=0")
+```
+Se crea una variable "votewinner" que recodifica a aquellos que votaron al candidato ganador de la última elección presidencial.
+```{r}
+lapop$votewinner <- NA
+lapop <- within(lapop, {
+                votewinner[vb2==2] <- 0
+                votewinner[vb3n_16==0] <- 0
+                votewinner[vb3n_16==97] <- 0
+                votewinner[vb3n_16==102] <- 0
+                votewinner[vb3n_16==103] <- 0
+                votewinner[vb3n_16==104] <- 0
+                votewinner[vb3n_16==177] <- 0
+                votewinner[vb3n_16==202] <- 0
+                votewinner[vb3n_16==203] <- 0
+                votewinner[vb3n_16==204] <- 0
+                votewinner[vb3n_16==205] <- 0
+                votewinner[vb3n_16==206] <- 0
+                votewinner[vb3n_16==207] <- 0
+                votewinner[vb3n_16==208] <- 0
+                votewinner[vb3n_16==209] <- 0
+                votewinner[vb3n_16==210] <- 0
+                votewinner[vb3n_16==211] <- 0
+                votewinner[vb3n_16==212] <- 0
+                votewinner[vb3n_16==213] <- 0
+                votewinner[vb3n_16==214] <- 0
+                votewinner[vb3n_16==277] <- 0
+                votewinner[vb3n_16==301] <- 0
+                votewinner[vb3n_16==303] <- 0
+                votewinner[vb3n_16==377] <- 0
+                votewinner[vb3n_16==402] <- 0
+                votewinner[vb3n_16==403] <- 0
+                votewinner[vb3n_16==404] <- 0
+                votewinner[vb3n_16==407] <- 0
+                votewinner[vb3n_16==408] <- 0
+                votewinner[vb3n_16==477] <- 0
+                votewinner[vb3n_16==501] <- 0
+                votewinner[vb3n_16==503] <- 0
+                votewinner[vb3n_16==504] <- 0
+                votewinner[vb3n_16==505] <- 0
+                votewinner[vb3n_16==577] <- 0
+                votewinner[vb3n_16==601] <- 0
+                votewinner[vb3n_16==602] <- 0
+                votewinner[vb3n_16==604] <- 0
+                votewinner[vb3n_16==605] <- 0
+                votewinner[vb3n_16==677] <- 0
+                votewinner[vb3n_16==702] <- 0
+                votewinner[vb3n_16==703] <- 0
+                votewinner[vb3n_16==777] <- 0
+                votewinner[vb3n_16==801] <- 0
+                votewinner[vb3n_16==802] <- 0
+                votewinner[vb3n_16==803] <- 0
+                votewinner[vb3n_16==805] <- 0
+                votewinner[vb3n_16==877] <- 0
+                votewinner[vb3n_16==902] <- 0
+                votewinner[vb3n_16==903] <- 0
+                votewinner[vb3n_16==904] <- 0
+                votewinner[vb3n_16==905] <- 0
+                votewinner[vb3n_16==906] <- 0
+                votewinner[vb3n_16==908] <- 0
+                votewinner[vb3n_16==977] <- 0
+                votewinner[vb3n_16==1002] <- 0
+                votewinner[vb3n_16==1003] <- 0
+                votewinner[vb3n_16==1004] <- 0
+                votewinner[vb3n_16==1005] <- 0
+                votewinner[vb3n_16==1077] <- 0
+                votewinner[vb3n_16==1102] <- 0
+                votewinner[vb3n_16==1103] <- 0
+                votewinner[vb3n_16==1104] <- 0
+                votewinner[vb3n_16==1105] <- 0
+                votewinner[vb3n_16==1106] <- 0
+                votewinner[vb3n_16==1107] <- 0
+                votewinner[vb3n_16==1108] <- 0
+                votewinner[vb3n_16==1177] <- 0
+                votewinner[vb3n_16==1202] <- 0
+                votewinner[vb3n_16==1203] <- 0
+                votewinner[vb3n_16==1204] <- 0
+                votewinner[vb3n_16==1205] <- 0
+                votewinner[vb3n_16==1206] <- 0
+                votewinner[vb3n_16==1277] <- 0
+                votewinner[vb3n_16==1303] <- 0
+                votewinner[vb3n_16==1306] <- 0
+                votewinner[vb3n_16==1307] <- 0
+                votewinner[vb3n_16==1309] <- 0
+                votewinner[vb3n_16==1310] <- 0
+                votewinner[vb3n_16==1311] <- 0
+                votewinner[vb3n_16==1377] <- 0
+                votewinner[vb3n_16==1402] <- 0
+                votewinner[vb3n_16==1403] <- 0
+                votewinner[vb3n_16==1404] <- 0
+                votewinner[vb3n_16==1405] <- 0
+                votewinner[vb3n_16==1406] <- 0
+                votewinner[vb3n_16==1477] <- 0
+                votewinner[vb3n_16==1502] <- 0
+                votewinner[vb3n_16==1503] <- 0
+                votewinner[vb3n_16==1577] <- 0
+                votewinner[vb3n_16==1602] <- 0
+                votewinner[vb3n_16==1604] <- 0
+                votewinner[vb3n_16==1605] <- 0
+                votewinner[vb3n_16==1677] <- 0
+                votewinner[vb3n_16==1702] <- 0
+                votewinner[vb3n_16==1703] <- 0
+                votewinner[vb3n_16==1704] <- 0
+                votewinner[vb3n_16==1705] <- 0
+                votewinner[vb3n_16==1777] <- 0
+                votewinner[vb3n_16==2102] <- 0
+                votewinner[vb3n_16==2103] <- 0
+                votewinner[vb3n_16==2177] <- 0
+                votewinner[vb3n_16==2202] <- 0
+                votewinner[vb3n_16==2203] <- 0
+                votewinner[vb3n_16==2204] <- 0
+                votewinner[vb3n_16==2205] <- 0
+                votewinner[vb3n_16==2206] <- 0
+                votewinner[vb3n_16==2277] <- 0
+                votewinner[vb3n_16==2301] <- 0
+                votewinner[vb3n_16==2377] <- 0
+                votewinner[vb3n_16==2402] <- 0
+                votewinner[vb3n_16==2477] <- 0
+                votewinner[vb3n_16==4001] <- 0
+                votewinner[vb3n_16==4003] <- 0
+                votewinner[vb3n_16==4004] <- 0
+                votewinner[vb3n_16==4077] <- 0
+                votewinner[vb3n_16==1701] <- 1
+                votewinner[vb3n_16==1001] <- 1
+                votewinner[vb3n_16==1501] <- 1
+                votewinner[vb3n_16==1305] <- 1
+                votewinner[vb3n_16==804] <- 1
+                votewinner[vb3n_16==603] <- 1
+                votewinner[vb3n_16==2101] <- 1
+                votewinner[vb3n_16==901] <- 1
+                votewinner[vb3n_16==302] <- 1
+                votewinner[vb3n_16==201] <- 1
+                votewinner[vb3n_16==2401] <- 1
+                votewinner[vb3n_16==2201] <- 1
+                votewinner[vb3n_16==401] <- 1
+                votewinner[vb3n_16==2302] <- 1
+                votewinner[vb3n_16==101] <- 1
+                votewinner[vb3n_16==502] <- 1
+                votewinner[vb3n_16==701] <- 1
+                votewinner[vb3n_16==1201] <- 1
+                votewinner[vb3n_16==1101] <- 1
+                votewinner[vb3n_16==4002] <- 1
+                votewinner[vb3n_16==1401] <- 1
+                votewinner[vb3n_16==1601] <- 1
+})
+table(lapop$votewinner)
+```
+Se tiene que volver a calcular el efecto de diseño muestral para que incluya a estas variables recodificadas.
+```{r}
+lapop.design<-svydesign(ids =~upm, strata =~ estratopri, weights = ~weight1500, nest=TRUE, data=lapop)
+```
+Luego de la recodificación, se corre el modelo y se guardan los resultados en el objeto "modelo2.pond".
+```{r}
+modelo2.pond <- svyglm(b37 ~ it1r + q5a01 + newsattn + useinternet + 
+                         polinterest + idpty + satisdem + votewinner + 
+                         tono + edrr + edadr + size + nse + mujer +
+                         factor(pais), design=lapop.design)
+modelo2.pond
+```
+Para visualizar mejor los resultados, podemos usar el siguiente código. Incluso se puede comparar ambos modelos:
+```{r}
+export_summs(modelo1.pond, modelo2.pond)
+```
+Para reproducir el gráfico 2, podemos usar el siguiente código:
+```{r}
+plot_summs(modelo2.pond, coefs=c("Confianza interpersonal" = "it1r", 
+                            "Asiste servicios religiosos" = "q5a01", 
+                            "Presta atención a las noticias" = "newsattn", 
+                            "Usa internet diariamente" = "useinternet",
+                            "Interés en política" = "polinterest", 
+                            "Se identifica con un partido" = "idpty",
+                            "Satisfacción con la democracia" = "satisdem", 
+                            "Votó por el ganador" = "votewinner"))
+```
+
+De esta manera se han replicado los gráficos presentados en este reporte 142 de la Serie Perspectivas usando los datos del Barómetro de las Américas por LAPOP.
