@@ -1,35 +1,33 @@
 ---
-title: "**TALLER: UNA GUÍA PRÁCTICA PARA USAR LOS DATOS DEL BARÓMETRO DE LAS AMÉRICAS**"
+title: "** TALLER: UNA GUÍA PRÁCTICA PARA USAR LOS DATOS DEL BARÓMETRO DE LAS AMÉRICAS **"
 output:
   html_document:
     df_print: paged
 ---
-
-# **¿QUIÉNES CONFÍAN EN LOS MEDIOS EN LAS AMÉRICAS**
 # REPLICACIÓN DEL INSIGHTS 142
+# ¿QUIÉNES CONFÍAN EN LOS MEDIOS EN LAS AMÉRICAS
 
 *22 de octubre de 2020*
 
-# ABSTRACT
+## ABSTRACT
 
-En este taller vamos a replicar el informe 142 de la Serie Perspectivas desde el Barómetro de las Américas. Se puede ver aquí la lista de los [Insights](https://www.vanderbilt.edu/lapop-espanol/perspectivas/). El informe 142 se puede conseguir en español [aquí](https://www.vanderbilt.edu/lapop/insights/IO942es.pdf).
-Se asume que los participantes tienen un conocimiento básico de R y RStudio. A lo largo de este taller, explicaremos, paso a paso, los procedimientos en RStudio para producir las tablas y gráficos que se ven en los informes. En estos informes, estas tablas y gráficos han sido producidos en STATA. 
+En este taller vamos a replicar el informe 142 de la Serie Perspectivas desde el Barómetro de las Américas. Se puede ver aquí la lista de los reportes [aquí](https://www.vanderbilt.edu/lapop-espanol/perspectivas/). El informe 142 se puede conseguir en español [aquí](https://www.vanderbilt.edu/lapop/insights/IO942es.pdf).
+Para este taller, se asume que los participantes tienen un conocimiento básico de R y RStudio. A lo largo de este taller, explicaremos, paso a paso, los procedimientos en RStudio para producir las tablas y gráficos que se ven en los informes. En estos informes, estas tablas y gráficos han sido producidos originalmente en STATA. 
 
-En resumen, este informe presenta el promedio de confianza en los medios de comunicación en las Américas y dos modelos explicativos de la confianza en los medios usando factores socioeconómicos y factores políticos.
+En resumen, este informe presenta el promedio de confianza en los medios de comunicación en las Américas y dos modelos explicativos de la confianza en los medios usando factores socioeconómicos y factores políticos en modelos de regresión lineal.
 
-# SOBRE LA BASE DE DATOS
+## SOBRE LA BASE DE DATOS
 
 Los datos que vamos a usar deben citarse de la siguiente manera:
 Fuente: Barómetro de las Américas por el Proyecto de Opinión Pública de América Latina (LAPOP), wwww.LapopSurveys.org.
 
-Pueden descargar los datos de manera libre en [Acceso](http://datasets.americasbarometer.org/database/login.php)
+Pueden descargar los datos de manera libre  [aquí](http://datasets.americasbarometer.org/database/login.php)
 
 En este enlace, se puede registrar o entrar como "Free User". En el buscador, se puede ingresar el texto "merge". Ahí se tendrá acceso a la base de datos completa "2004-2018 Grand Merge Free" en versión para STATA. Se descarga la base de datos en formato zip, la que se descomprime en formato .dta.
 
-Debido a que estas bases de datos son muy grandes (42MB en formato zip), para este taller vamos a trabajar con una versión reducida, que incluye los países y años seleccionados en el informe. Esta base de datos se puede descargar [aquí](INCLUIR LINK)
+Debido a que estas bases de datos son muy grandes (42MB en formato zip), para este taller vamos a trabajar con una versión reducida, que incluye los países y años seleccionados en el informe. Esta base de datos y todos los materiales para esta taller se pueden descargar [aquí](https://github.com/arturomaldonado/TallerLAPOP2020.git)
 
-
-# INSTALANDO LOS PAQUETES NECESARIAS EN R
+## INSTALANDO LOS PAQUETES NECESARIOS EN R
 
 ```{r message=FALSE, warning=FALSE}
 library(rio) # Para importar los datos
@@ -38,13 +36,13 @@ library(Rmisc) # Para poder usar la función summarySE
 library(descr) # Para poder usar la función crosstab y compmeans
 ```
 
-# LEYENDO LA BASE DE DATOS EN R
+## LEYENDO LA BASE DE DATOS EN R
 *Si se trabajara con la base de datos descargada del repositorio de LAPOP*
 
 Se carga la base de datos en STATA en R en un dataframe "lapopmerge". Tenga en cuenta que la base de datos tiene que estar en su directorio de trabajo (working directory). Para este Insights se analiza la ronda 2016/17, por lo que se selecciona esta ronda en el merge total. Se crea un nuevo dataframe "lapop".
 Luego, también se elimina las observaciones de los países que no se analizan en este reporte por no tener datos de la variable sobre medios de comunicación. Se elimina el dataframe del Merge original. 
 Finalmente el dataframe "lapop"  incluye solo la ronda 2016/17 y los países de análisis.
-```{r}
+```{r eval=FALSE, include=FALSE}
 lapopmerge <- import("LAPOP_Merge_2004_2018.dta")
 lapop <- subset(lapopmerge, wave==2016)
 lapop <- subset(lapop, pais<=23 | pais>=40)
@@ -56,7 +54,7 @@ lapop <- import("lapop16.dta")
 ```
 La autora indica que para este reporte se ha usado la pregunta: B37: ¿Hasta qué punto tiene usted confianza en los medios de comunicación? 
 
-# GRÁFICO 1
+## GRÁFICO 1
 La escala original de la variable iba de 1 a 7, donde 1 indica “Nada” y 7 “Mucho”. Para reproducir la Figura 1 primero se tiene que recodificar la variable dependiente b37 en una nueva variable b37r. El texto indica que la recodificación es como sigue: valores entre 1 y 4 tienen un nuevo valor de 0 y valores entre 5 y 7, un nuevo valor de 100.
 ```{r}
 library(car) # Para poder usar el comando recode
@@ -83,6 +81,7 @@ crosstab(lapop$pais, lapop$year, weight=lapop$weight1500, plot=F)
 ```
 
 *Sin tomar en cuenta el efecto de diseño*
+
 Para reproducir el gráfico 1 sin tomar en cuenta el efecto de diseño, se calculan los datos de % e intervalos de confianza de la variable b37r por cada país y se guarda en un objeto "df"
 ```{r}
 df <- summarySE(data=lapop, measurevar="b37r", groupvar="pais", na.rm=T)
@@ -100,6 +99,7 @@ graf1
 ```
 
 *Para tomar en cuenta el efecto de diseño*
+
 Para reproducir el gráfico 1, tomando en cuenta el diseño muestral se tiene que seguir el siguiente código para la creación de un objeto con los datos ponderados. Este código permite incluir la variable "weight1500".
 ```{r}
 tab.b37r <- as.data.frame(compmeans(lapop$b37r, lapop$pais, lapop$weight1500, plot=FALSE))
@@ -130,7 +130,7 @@ graf1_pond
 
 La autora indica que para el gráfico 2 va a usar un modelo de regresión de mínimos cuadrados ordinarios (OLS), usando seis características demográficas y socioeconómicas como predictores de la confianza reportada en los medios de comunicación
 
-# GRÁFICO 2
+## GRÁFICO 2
 
 Para repreducir el segundo gráfico se tiene que recodificar las variables independientes para que varíen entre 0 y 1.
 ```{r}
@@ -170,7 +170,7 @@ plot_summs(modelo1.pond, coefs=c("Mujer" = "mujer",
 
 Como indica la autora: "El Gráfico 3 incorpora al modelo la confianza interpersonal, asistencia a los servicios religiosos, la atención que le prestan a las noticias, uso de internet, interés en política, identificación con un partido político, satisfacción con la democracia, y el voto en las elecciones presidenciales más recientes. De forma similar al Gráfico 2, los efectos estimados que aparecen en el Gráfico 3 son calculados con un modelo de regresión de mínimos cuadrados".
 
-# GRÁFICO 3
+## GRÁFICO 3
 
 Para reproducir el gráfico 3, primero se tienen que recodificar las variables independientes.
 ```{r}
