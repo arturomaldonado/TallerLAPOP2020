@@ -1,13 +1,12 @@
 ---
-title: "** TALLER: UNA GUÍA PRÁCTICA PARA USAR LOS DATOS DEL BARÓMETRO DE LAS AMÉRICAS **"
-output:
-  html_document:
-    df_print: paged
+title: " TALLER: UNA GUÍA PRÁCTICA PARA USAR LOS DATOS DEL BARÓMETRO DE LAS AMÉRICAS "
+author: "Arturo Maldonado"
+date: "22/09/2020"
+output: html_document
 ---
-# REPLICACIÓN DEL INSIGHTS 142
-# ¿QUIÉNES CONFÍAN EN LOS MEDIOS EN LAS AMÉRICAS
 
-*22 de octubre de 2020*
+# REPLICACIÓN DEL INSIGHTS 142
+# ¿QUIÉNES CONFÍAN EN LOS MEDIOS EN LAS AMÉRICAS?
 
 ## ABSTRACT
 
@@ -66,10 +65,10 @@ Al momento de leer la base de datos en R, este programa importa las variables co
 lapop$pais = as.factor(lapop$pais)
 levels(lapop$pais) <- c("México", "Guatemala", "El Salvador", "Honduras",
                             "Nicaragua","Costa Rica", "Panamá", "Colombia", 
-                            "Ecuador", "Bolivia", "Perú", "Paraguay", "Chile",
-                            "Uruguay", "Brasil", "Venezuela", "Argentina", 
-                            "Rep. Dom.", "Haití", "Jamaica", "Estados Unidos", 
-                            "Canada")
+                            "Ecuador", "Bolivia", "Perú", "Paraguay", 
+                            "Chile", "Uruguay", "Brasil", "Venezuela", 
+                            "Argentina", "Rep. Dom.", "Haití", "Jamaica",
+                            "Estados Unidos", "Canada")
 levels(lapop$pais)
 table(lapop$pais)
 table(lapop$pais, lapop$year)
@@ -357,3 +356,5 @@ plot_summs(modelo2.pond, coefs=c("Confianza interpersonal" = "it1r",
 ```
 
 De esta manera se han replicado los gráficos presentados en este reporte 142 de la Serie Perspectivas usando los datos del Barómetro de las Américas por LAPOP.
+
+![](/Users/Arturo/Desktop/ab-full-color.png) ![](/Users/Arturo/Desktop/lapop-full-color.png) ![](/Users/Arturo/Desktop/pucp.png)

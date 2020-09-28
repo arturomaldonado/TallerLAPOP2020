@@ -3,11 +3,6 @@
 #################################################################################################
 
 #Cargando librerias básicas#
-
-install.packages("Rmisc")
-install.packages("lattice")
-install.packages("huxtable")
-
 library(foreign)
 library(descr)
 library(DescTools)
@@ -23,64 +18,67 @@ library(psych)
 library(car)
 library(jtools)
 library(huxtable)
+library(rio)
 
 #Abriendo la base de datos de Stata en RStudio#
-lapop <- read_dta("LAPOP_Merge_2004_2018.dta")
-
-## Conociendo la base de datos #
-dim(lapop)
-names(lapop)
-str(lapop)
-View(lapop)
-
-lapop <- read_dta("LAPOP_Merge_2004_2018.dta")
+lapop <- import("LAPOP_merge_reduced.dta")
 
 #Seleccionando solo los años 2018 y 2019 en un nuevo dataframe#
-lapop1819 <- subset(lapop, year==2018 | year==2019)
-lapop1819 <- subset(lapop1819, pais<=23)
-rm(lapop)
-lapop1819$pais = as.factor(lapop1819$pais)
-levels(lapop1819$pais) <- c("México", "Guatemala", "El Salvador", "Honduras", "Nicaragua",
-                            "Costa Rica", "Panamá", "Colombia", "Ecuador", "Bolivia", 
-                            "Perú", "Paraguay", "Chile", "Uruguay", "Brasil", "Argentina",
-                            "Rep. Dom.", "Jamaica")
-levels(lapop1819$pais)
-str(lapop1819$pais)
-table(lapop1819$pais)
+lapop$pais = as.factor(lapop$pais)
+levels(lapop$pais) <- c("México", "Guatemala", "El Salvador", "Honduras",
+                        "Nicaragua","Costa Rica", "Panamá", "Colombia", 
+                        "Ecuador", "Bolivia", "Perú", "Paraguay", "Chile",
+                        "Uruguay", "Brasil", "Venezuela", "Argentina", 
+                        "Rep. Dom.", "Haití", "Jamaica")
 
-#Recodificando variable JC15A#
-lapop1819$golpe <- recode(lapop1819$jc15a, "1=1; 2=0")
-lapop1819$golper <- recode(lapop1819$jc15a, "1=100; 2=0")
+table(lapop$pais, lapop$year)
+crosstab(lapop$pais, lapop$year, weight=lapop$weight1500, plot=F)
 
-lapop1819$golpe = as.factor(lapop1819$golpe)
-levels(lapop1819$golpe)<-c("No","Sí")
-levels(lapop1819$golpe)
-table(lapop1819$golpe)
+lapop18 <- subset(lapop, wave==2018)
 
-#Comparación entre países para la última ronda#
-prop.table(table(lapop1819$golpe, lapop1819$pais), 2)*100
-cuadro3 <- prop.table(table(lapop1819$golpe, lapop1819$pais), 2)*100
-barplot(cuadro3, legend = rownames(cuadro2), beside=F)
+tab.jc15ar <- as.data.frame(compmeans(lapop18$jc15ar, lapop18$pais, lapop18$weight1500, plot=FALSE))
+tab.jc15ar
+varnames <- c("media", "n", "sd")
+colnames(tab.jc15ar) <- varnames
+tab.jc15ar$pais <- row.names(tab.jc15ar)
+tab.jc15ar$err.st <- tab.jc15ar$sd/sqrt(tab.jc15ar$n)
+tab.jc15ar$ci <- tab.jc15ar$err.st*1.96
+tab.jc15ar <- tab.jc15ar[-21, ]
+tab.jc15ar <- tab.jc15ar[-16, ]
+tab.jc15ar <- tab.jc15ar[-18, ]
+tab.jc15ar
 
-df <- summarySE(data=lapop1819, measurevar="golper", groupvar="pais", na.rm=T)
-
-graf.punto <- ggplot(df, aes(x=pais, y=golper)) +
-  geom_point(size=3) + ylim(0, 40)
-
-graf.punto2 <- graf.punto + geom_errorbar(aes(ymin=golper-ci, ymax=golper+ci), width=0.2) + 
-  ylab("Cierre del congreso es justificable (%)") + 
-  ggtitle("Intervalo de confianza al 95% para el porcentaje de personas que justifican el cierre del congreso por país")
-
-graf.barra1 <- ggplot(df, aes(x=reorder(pais, golper), y=golper)) +
-  geom_bar(width=0.5, fill="white", colour="black", stat="identity") +
-  geom_errorbar(aes(ymin=golper-ci, ymax=golper+ci), width= 0.2) +
-  geom_text(aes(label=paste(round(golper, 1), "%")), hjust=-0.5) +
-  ylab("Justifica cierre del congreso") + ggtitle("Intervalo de confianza al 95% para el porcentaje de personas que justifican el cierre del congreso por país") +
+graf1_pond <- ggplot(tab.jc15ar, aes(x=reorder(pais, media), y=media)) +
+  geom_bar(width=0.5, fill="purple", colour="black", stat="identity")+
+  geom_errorbar(aes(ymin=media-ci, ymax=media+ci), width=0.2)+
+  geom_text(aes(label=paste(round(media, 1), "%")), hjust=-0.8, size=2)+
+  xlab("") + ylab("Cree que cierre del Congreso
+                  es justificable en tiempos difíciles (%)")+
   coord_flip()
+graf1_pond
 
 #Seleccionando solo los años 2018 y 2019 en un nuevo dataframe#
-#peru <- subset(lapop, year>=2010 & pais==11)
+peru <- subset(lapop, year>=2010 & pais=="Perú")
 
-#prop.table(table(peru$golpe, peru$year), 2)*100
-#cuadro4 <- prop.table(table(peru$golpe, peru$year), 2)*100
-#barplot(cuadro4, legend = rownames(cuadro2), beside=F)
+tab.peru <- as.data.frame(compmeans(peru$jc15ar, peru$year, peru$weight1500, plot=FALSE))
+colnames(tab.peru) <- varnames
+tab.peru$year <- row.names(tab.peru)
+tab.peru$err.st <- tab.peru$sd/sqrt(tab.peru$n)
+tab.peru$ci <- tab.peru$err.st*1.96
+tab.peru <- tab.peru[-6, ]
+tab.peru
+
+graf2_pond <- ggplot(tab.peru, aes(x=year, y=media, group=1)) + 
+  geom_line() +
+  geom_point() +
+  ylab("Tolerancia a `golpes de Estado` ejecutivos (%)") +
+  xlab("Año")
+graf2_pond + geom_ribbon(aes(ymin=media-ci, 
+                             ymax=media+ci),
+                            linetype=1,
+                            fill="grey80", outline.type="upper") + 
+            geom_line(aes(y=media), colour="green4") + 
+            geom_text(aes(label=paste(round(media, 1), "%")), 
+                      hjust=-0.8, size=3)
+
+

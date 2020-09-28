@@ -1,0 +1,151 @@
+---
+title: " TALLER: UNA GUÍA PRÁCTICA PARA USAR LOS DATOS DEL BARÓMETRO DE LAS AMÉRICAS "
+author: "Arturo Maldonado"
+date: "22/09/2020"
+output: html_document
+---
+
+# REPLICACIÓN DEL TOPICAL BRIEF 035 
+# Tolerancia a los "golpes de Estado" ejecutivos en Perú
+
+## ABSTRACT
+
+En este taller vamos a replicar el informe Actualidad #035 de la Serie Perspectivas desde el Barómetro de las Américas. Se puede ver aquí la lista de los reportes [aquí](https://www.vanderbilt.edu/lapop-espanol/perspectivas/). El informe 142 se puede conseguir en español [aquí](https://www.vanderbilt.edu/lapop/insights/ITB035es.pdf).
+
+Para este taller, se asume que los participantes tienen un conocimiento básico de R y RStudio. A lo largo de este taller, explicaremos, paso a paso, los procedimientos en RStudio para producir las tablas y gráficos que se ven en los informes. En estos informes, estas tablas y gráficos han sido producidos originalmente en STATA. 
+
+En resumen, este informe presenta el promedio de tolerancia a los "golpes de Estado" ejecutivos en las Américas y la tendencia en el tiempo de esta tolerancia en Perú.
+
+## SOBRE LA BASE DE DATOS
+
+Los datos que vamos a usar deben citarse de la siguiente manera:
+Fuente: Barómetro de las Américas por el Proyecto de Opinión Pública de América Latina (LAPOP), wwww.LapopSurveys.org.
+
+Pueden descargar los datos de manera libre  [aquí](http://datasets.americasbarometer.org/database/login.php)
+
+En este enlace, se puede registrar o entrar como "Free User". En el buscador, se puede ingresar el texto "merge". Ahí se tendrá acceso a la base de datos completa "2004-2018 Grand Merge Free" en versión para STATA. Se descarga la base de datos en formato zip, la que se descomprime en formato .dta.
+
+Debido a que estas bases de datos son muy grandes (42MB en formato zip), para este taller vamos a trabajar con una versión reducida, que incluye los países y años seleccionados en el informe. Esta base de datos y todos los materiales para esta taller se pueden descargar [aquí](https://github.com/arturomaldonado/TallerLAPOP2020.git)
+
+## INSTALANDO LOS PAQUETES NECESARIOS EN R
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(rio) # Para importar los datos
+library(ggplot2) # Para hacer gráficos tipo ggplot
+library(Rmisc) # Para poder usar la función summarySE
+library(descr) # Para poder usar la función crosstab y compmeans
+```
+
+## LEYENDO LA BASE DE DATOS EN R
+*Si se trabajara con la base de datos descargada del repositorio de LAPOP*
+
+Se carga la base de datos en STATA en R en un dataframe "lapopmerge". Tenga en cuenta que la base de datos tiene que estar en su directorio de trabajo (working directory). Para este Insights se analiza la ronda 2016/17, por lo que se selecciona esta ronda en el merge total. Se crea un nuevo dataframe "lapop".
+Luego, también se elimina las observaciones de los países que no se analizan en este reporte por no tener datos de la variable sobre medios de comunicación. Se elimina el dataframe del Merge original. 
+Finalmente el dataframe "lapop"  incluye solo la ronda 2016/17 y los países de análisis.
+
+```{r eval=FALSE, include=FALSE}
+lapopmerge <- import("LAPOP_Merge_2004_2018.dta")
+lapop <- subset(lapopmerge, wave==2016)
+lapop <- subset(lapop, pais<=23 | pais>=40)
+rm(lapopmerge)
+```
+Como en este taller estamos trabajando con la versión simplificada de la base de datos, directamente leemos esta base de datos en RStudio.
+```{r}
+lapop <- import("LAPOP_merge_reduced.dta")
+```
+Esta base de datos solo contiene el grupo de variables necesarias para este análisis para todas las rondas y todos los países. El análisis para el gráfico 1 incluye a todos los países y el análisis del gráfico 2 incluye todas las rondas para Perú.
+Al momento de leer la base de datos en R, este programa importa las variables como numéricas. La variable "pais" se tiene que convertir en una variable de tipo "factor" y se tiene que etiquetar.
+```{r}
+lapop$pais = as.factor(lapop$pais)
+levels(lapop$pais) <- c("México", "Guatemala", "El Salvador", "Honduras",
+                        "Nicaragua","Costa Rica", "Panamá", "Colombia", 
+                        "Ecuador", "Bolivia", "Perú", "Paraguay", "Chile",
+                        "Uruguay", "Brasil", "Venezuela", "Argentina", 
+                        "Rep. Dom.", "Haití", "Jamaica")
+table(lapop$pais)
+```
+___
+## GRÁFICO 1
+La autora indica que para este reporte se ha usado la pregunta: JC15A: ¿Cree usted que cuando el país enfrenta momentos muy difíciles, se justifica que el presidente del país cierre el Congreso y gobierne sin Congreso? 
++ (1) Sí se justifica
++ (2) No se justifica 
+Esta variable se analiza para la ronda 2018, por lo que se seleccionan estas observaciones en un nuevo dataframe "lapop18".
+```{r}
+lapop18 <- subset(lapop, wave==2018)
+```
+Esta base de datos ya cuenta con una variable recodificada llamada "jc15ar", de tal manera que 1=100 y 2=0. 
+Con el siguiente código se calcula la media de esta variable recodificada por cada país, tomando en cuenta la ponderación por país. Estos datos se guardan en un nuevo dataframe "tab.jc15ar".
+```{r}
+tab.jc15ar <- as.data.frame(compmeans(lapop18$jc15ar, lapop18$pais, lapop18$weight1500, plot=FALSE))
+tab.jc15ar
+```
+En este dataframe, se cambian los nombres de las columnas, se agrega una nueva columna "pais", se calcula el error estándar y el margen de error y se eliminan las filas sin datos y de total.
+```{r}
+varnames <- c("media", "n", "sd")
+colnames(tab.jc15ar) <- varnames
+tab.jc15ar$pais <- row.names(tab.jc15ar)
+tab.jc15ar$err.st <- tab.jc15ar$sd/sqrt(tab.jc15ar$n)
+tab.jc15ar$ci <- tab.jc15ar$err.st*1.96
+tab.jc15ar <- tab.jc15ar[-21, ]
+tab.jc15ar <- tab.jc15ar[-16, ]
+tab.jc15ar <- tab.jc15ar[-18, ]
+tab.jc15ar
+```
+Con estos datos en el dataframe se usa el siguiente código para producir el gráfico 1.
+```{r}
+graf035_1 <- ggplot(tab.jc15ar, aes(x=reorder(pais, media), y=media)) +
+  geom_bar(width=0.5, fill="purple", colour="black", stat="identity")+
+  geom_errorbar(aes(ymin=media-ci, ymax=media+ci), width=0.2)+
+  geom_text(aes(label=paste(round(media, 1), "%")), hjust=-1.1, size=2)+
+  xlab("") + ylab("Cree que cierre del Congreso
+                  es justificable en tiempos difíciles (%)")+
+  coord_flip()
+graf035_1
+```
+
+___
+## GRÁFICO 2
+Para producir el gráfico 2 se tiene que seleccionar las observaciones de Perú para los años 2010 en adelante.
+```{r}
+peru <- subset(lapop, year>=2010 & pais=="Perú")
+```
+Con este dataframe se calcula el promedio de la variable "jc15ar" por año y se guarda en un nuevo dataframe "tab.peru".
+```{r}
+tab.peru <- as.data.frame(compmeans(peru$jc15ar, peru$year, peru$weight1500, plot=FALSE))
+tab.peru
+```
+De la misma manera que en el gráfico 1, se tiene que adecuar este dataframe para tener los datos por año necesarios para producir el gráfico 2.
+```{r}
+colnames(tab.peru) <- varnames
+tab.peru$year <- row.names(tab.peru)
+tab.peru$err.st <- tab.peru$sd/sqrt(tab.peru$n)
+tab.peru$ci <- tab.peru$err.st*1.96
+tab.peru <- tab.peru[-6, ]
+tab.peru
+```
+Primero se crea el gráfico de líneas que muestra el cambio en el promedio  de esta variable por año para Perú.
+```{r}
+graf2 <- ggplot(tab.peru, aes(x=year, y=media, group=1)) + 
+  geom_line() +
+  geom_point() +
+  ylab("Tolerancia a golpes de Estado ejecutivos (%)") +
+  xlab("Año")
+graf2
+```
+
+A este gráfico se le agrega la franja con el intervalo de confianza.
+```{r}
+graf035_2 <- graf2 + geom_ribbon(aes(ymin=media-ci, 
+                             ymax=media+ci),
+                            linetype=1,
+                            fill="grey80", outline.type="upper") + 
+            geom_line(aes(y=media), colour="green4") + 
+            geom_text(aes(label=paste(round(media, 1), "%")), 
+                      hjust=-0.4, size=3)
+graf035_2
+```
+
+De esta manera se han replicado los gráficos presentados en este Brief 035 de la Serie Perspectivas usando los datos del Barómetro de las Américas por LAPOP.
+
+![](/Users/Arturo/Desktop/ab-full-color.png) ![](/Users/Arturo/Desktop/lapop-full-color.png) ![](/Users/Arturo/Desktop/pucp.png)
