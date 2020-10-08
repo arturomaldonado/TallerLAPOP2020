@@ -9,6 +9,7 @@ output:
 
 # REPLICACIÓN DEL INSIGHTS 142
 # ¿QUIÉNES CONFÍAN EN LOS MEDIOS DE COMUNICACIÓN EN LAS AMÉRICAS?
+# Autora: Hannah Hagan - Vanderbilt University
 
 ## ABSTRACT
 
@@ -49,7 +50,7 @@ lapop <- subset(lapopmerge, wave==2016)
 lapop <- subset(lapop, pais<=23 | pais>=40)
 rm(lapopmerge)
 ```
-Como en este taller estamos trabajando con la versión simplificada de la base de datos, directamente leemos esta base de datos en RStudio
+En este taller vamos a trabajar con una versión simplificada de la base de datos, que incluye solo las variables necesarias para el análisis. Esta base reducida directamente la leemos en RStudio y seleccionamos la ronda de trabajo.
 ```{r}
 lapop <- import("LAPOP_reduced_merge.dta")
 lapop <- subset(lapop, wave==2016)

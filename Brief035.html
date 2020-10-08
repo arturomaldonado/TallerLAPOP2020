@@ -9,7 +9,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
-<meta name="author" content="Arturo Maldonado" />
+<meta name="author" content="Arturo Maldonado - Pontificia Universidad Católica del Perú" />
 
 
 <title>TALLER: UNA GUÍA PRÁCTICA PARA USAR LOS DATOS DEL BARÓMETRO DE LAS AMÉRICAS</title>
@@ -363,7 +363,7 @@ summary {
 
 
 <h1 class="title toc-ignore">TALLER: UNA GUÍA PRÁCTICA PARA USAR LOS DATOS DEL BARÓMETRO DE LAS AMÉRICAS</h1>
-<h4 class="author">Arturo Maldonado</h4>
+<h4 class="author">Arturo Maldonado - Pontificia Universidad Católica del Perú</h4>
 <h4 class="date">22/09/2020</h4>
 
 </div>
@@ -374,6 +374,9 @@ summary {
 </div>
 <div id="tolerancia-a-los-golpes-de-estado-ejecutivos-en-perú" class="section level1">
 <h1>Tolerancia a los “golpes de Estado” ejecutivos en Perú</h1>
+</div>
+<div id="autoras-mariana-v.-ramírez-bustamante-y-elizabeth-j.-zechmeister---vanderbilt-university" class="section level1">
+<h1>Autoras: Mariana V. Ramírez Bustamante y Elizabeth J. Zechmeister - Vanderbilt University</h1>
 <div id="abstract" class="section level2">
 <h2>ABSTRACT</h2>
 <p>En este taller vamos a replicar el informe Actualidad #035 de la Serie Perspectivas desde el Barómetro de las Américas. Se puede ver aquí la lista de los reportes <a href="https://www.vanderbilt.edu/lapop-espanol/perspectivas/">aquí</a>. El informe 142 se puede conseguir en español <a href="https://www.vanderbilt.edu/lapop/insights/ITB035es.pdf">aquí</a>.</p>
@@ -394,35 +397,33 @@ summary {
 <h2>LEYENDO LA BASE DE DATOS EN R</h2>
 <p><em>Si se trabajara con la base de datos descargada del repositorio de LAPOP</em></p>
 <p>Se carga la base de datos en STATA en R en un dataframe “lapopmerge”. Tenga en cuenta que la base de datos tiene que estar en su directorio de trabajo (working directory). Para este Insights se analiza la ronda 2016/17, por lo que se selecciona esta ronda en el merge total. Se crea un nuevo dataframe “lapop”. Luego, también se elimina las observaciones de los países que no se analizan en este reporte por no tener datos de la variable sobre medios de comunicación. Se elimina el dataframe del Merge original. Finalmente el dataframe “lapop” incluye solo la ronda 2016/17 y los países de análisis.</p>
-<p>Como en este taller estamos trabajando con la versión simplificada de la base de datos, directamente leemos esta base de datos en RStudio.</p>
-<pre class="r"><code>lapop &lt;- import(&quot;LAPOP_merge_reduced.dta&quot;)</code></pre>
-<p>Esta base de datos solo contiene el grupo de variables necesarias para este análisis para todas las rondas y todos los países. El análisis para el gráfico 1 incluye a todos los países y el análisis del gráfico 2 incluye todas las rondas para Perú. Al momento de leer la base de datos en R, este programa importa las variables como numéricas. La variable “pais” se tiene que convertir en una variable de tipo “factor” y se tiene que etiquetar.</p>
+<p>En este taller vamos a trabajar con una versión simplificada de la base de datos, que incluye solo las variables necesarias para el análisis. Esta base reducida directamente la leemos en RStudio y seleccionamos la ronda de trabajo.</p>
+<pre class="r"><code>lapop &lt;- import(&quot;LAPOP_reduced_merge.dta&quot;)
+lapop &lt;- subset(lapop, wave==2018)
+lapop &lt;- subset(lapop, pais&lt;=23)</code></pre>
+<p>El análisis para el gráfico 1 incluye a todos los países y el análisis del gráfico 2 incluye todas las rondas para Perú. Al momento de leer la base de datos en R, este programa importa las variables como numéricas. La variable “pais” se tiene que convertir en una variable de tipo “factor” y se tiene que etiquetar.</p>
 <pre class="r"><code>lapop$pais = as.factor(lapop$pais)
 levels(lapop$pais) &lt;- c(&quot;México&quot;, &quot;Guatemala&quot;, &quot;El Salvador&quot;, &quot;Honduras&quot;,
                         &quot;Nicaragua&quot;,&quot;Costa Rica&quot;, &quot;Panamá&quot;, &quot;Colombia&quot;, 
                         &quot;Ecuador&quot;, &quot;Bolivia&quot;, &quot;Perú&quot;, &quot;Paraguay&quot;, &quot;Chile&quot;,
-                        &quot;Uruguay&quot;, &quot;Brasil&quot;, &quot;Venezuela&quot;, &quot;Argentina&quot;, 
-                        &quot;Rep. Dom.&quot;, &quot;Haití&quot;, &quot;Jamaica&quot;)
+                        &quot;Uruguay&quot;, &quot;Brasil&quot;, &quot;Argentina&quot;, 
+                        &quot;Rep. Dom.&quot;, &quot;Jamaica&quot;)
 table(lapop$pais)</code></pre>
 <pre><code>## 
 ##      México   Guatemala El Salvador    Honduras   Nicaragua  Costa Rica 
-##       12476       12395       12488       12612       12607       12046 
+##        1580        1596        1511        1560        1547        1501 
 ##      Panamá    Colombia     Ecuador     Bolivia        Perú    Paraguay 
-##       12455       12213       17991       21569       11668        9888 
-##       Chile     Uruguay      Brasil   Venezuela   Argentina   Rep. Dom. 
-##       11414       10319       11222        9068        8976       15047 
-##       Haití     Jamaica 
-##       10482       10629</code></pre>
+##        1559        1663        1533        1682        1521        1515 
+##       Chile     Uruguay      Brasil   Argentina   Rep. Dom.     Jamaica 
+##        1638        1581        1498        1528        1516        1513</code></pre>
 <hr />
 </div>
 <div id="gráfico-1" class="section level2">
 <h2>GRÁFICO 1</h2>
-<p>La autora indica que para este reporte se ha usado la pregunta: JC15A: ¿Cree usted que cuando el país enfrenta momentos muy difíciles, se justifica que el presidente del país cierre el Congreso y gobierne sin Congreso? + (1) Sí se justifica + (2) No se justifica Esta variable se analiza para la ronda 2018, por lo que se seleccionan estas observaciones en un nuevo dataframe “lapop18”.</p>
-<pre class="r"><code>lapop18 &lt;- subset(lapop, wave==2018)</code></pre>
-<p>Esta base de datos ya cuenta con una variable recodificada llamada “jc15ar”, de tal manera que 1=100 y 2=0. Con el siguiente código se calcula la media de esta variable recodificada por cada país, tomando en cuenta la ponderación por país. Estos datos se guardan en un nuevo dataframe “tab.jc15ar”.</p>
-<pre class="r"><code>tab.jc15ar &lt;- as.data.frame(compmeans(lapop18$jc15ar, lapop18$pais, lapop18$weight1500, plot=FALSE))</code></pre>
-<pre><code>## Warning in compmeans(lapop18$jc15ar, lapop18$pais, lapop18$weight1500, plot =
-## FALSE): 11367 rows with missing values dropped</code></pre>
+<p>La autora indica que para este reporte se ha usado la pregunta: JC15A: ¿Cree usted que cuando el país enfrenta momentos muy difíciles, se justifica que el presidente del país cierre el Congreso y gobierne sin Congreso? + (1) Sí se justifica + (2) No se justifica Esta base de datos ya cuenta con una variable recodificada llamada “jc15ar”, de tal manera que 1=100 y 2=0. Con el siguiente código se calcula la media de esta variable recodificada por cada país, tomando en cuenta la ponderación por país. Estos datos se guardan en un nuevo dataframe “tab.jc15ar”.</p>
+<pre class="r"><code>tab.jc15ar &lt;- as.data.frame(compmeans(lapop$jc15ar, lapop$pais, lapop$weight1500, plot=FALSE))</code></pre>
+<pre><code>## Warning in compmeans(lapop$jc15ar, lapop$pais, lapop$weight1500, plot = FALSE):
+## 11367 rows with missing values dropped</code></pre>
 <pre class="r"><code>tab.jc15ar</code></pre>
 <pre><code>##                  Mean     N Std. Dev.
 ## México      28.075052  1366  44.95304
@@ -440,10 +441,8 @@ table(lapop$pais)</code></pre>
 ## Chile       21.279555   658  40.95954
 ## Uruguay      9.221902   658  28.95548
 ## Brasil      22.289784   716  41.64814
-## Venezuela          NA    NA   0.00000
 ## Argentina   13.212796   706  33.88700
 ## Rep. Dom.   24.305061  1388  42.90800
-## Haití              NA    NA   0.00000
 ## Jamaica     23.959828   691  42.71475
 ## Total       23.843688 16069  42.61409</code></pre>
 <p>En este dataframe, se cambian los nombres de las columnas, se agrega una nueva columna “pais”, se calcula el error estándar y el margen de error y se eliminan las filas sin datos y de total.</p>
@@ -452,9 +451,7 @@ colnames(tab.jc15ar) &lt;- varnames
 tab.jc15ar$pais &lt;- row.names(tab.jc15ar)
 tab.jc15ar$err.st &lt;- tab.jc15ar$sd/sqrt(tab.jc15ar$n)
 tab.jc15ar$ci &lt;- tab.jc15ar$err.st*1.96
-tab.jc15ar &lt;- tab.jc15ar[-21, ]
-tab.jc15ar &lt;- tab.jc15ar[-16, ]
-tab.jc15ar &lt;- tab.jc15ar[-18, ]
+tab.jc15ar &lt;- tab.jc15ar[-19, ]
 tab.jc15ar</code></pre>
 <pre><code>##                 media    n       sd        pais   err.st       ci
 ## México      28.075052 1366 44.95304      México 1.216280 2.383910
@@ -489,8 +486,8 @@ graf035_1</code></pre>
 </div>
 <div id="gráfico-2" class="section level2">
 <h2>GRÁFICO 2</h2>
-<p>Para producir el gráfico 2 se tiene que seleccionar las observaciones de Perú para los años 2010 en adelante.</p>
-<pre class="r"><code>peru &lt;- subset(lapop, year&gt;=2010 &amp; pais==&quot;Perú&quot;)</code></pre>
+<p>Para producir el gráfico 2 se va a trabajar con la base de datos de Perú para todas las rondas. La base de datos con la que se trabajará en este taller es una reducida, que solo incluye las variables necesarias para este análisis.</p>
+<pre class="r"><code>peru &lt;- import(&quot;Peru reduced.dta&quot;)</code></pre>
 <p>Con este dataframe se calcula el promedio de la variable “jc15ar” por año y se guarda en un nuevo dataframe “tab.peru”.</p>
 <pre class="r"><code>tab.peru &lt;- as.data.frame(compmeans(peru$jc15ar, peru$year, peru$weight1500, plot=FALSE))</code></pre>
 <pre><code>## Warning in compmeans(peru$jc15ar, peru$year, peru$weight1500, plot = FALSE):

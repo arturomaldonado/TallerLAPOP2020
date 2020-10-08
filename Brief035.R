@@ -15,19 +15,19 @@ lapop <- subset(lapop, pais<=23 | pais>=40)
 rm(lapopmerge)
 
 #Abriendo la base de datos de Stata en RStudio#
-lapop <- import("LAPOP_merge_reduced.dta")
+lapop <- import("LAPOP_reduced_merge.dta")
+lapop <- subset(lapop, wave==2018)
+lapop <- subset(lapop, pais<=23)
 
 #Seleccionando solo los años 2018 y 2019 en un nuevo dataframe#
 lapop$pais = as.factor(lapop$pais)
 levels(lapop$pais) <- c("México", "Guatemala", "El Salvador", "Honduras",
                         "Nicaragua","Costa Rica", "Panamá", "Colombia", 
                         "Ecuador", "Bolivia", "Perú", "Paraguay", "Chile",
-                        "Uruguay", "Brasil", "Venezuela", "Argentina", 
-                        "Rep. Dom.", "Haití", "Jamaica")
-table(lapop$pais, lapop$year)
+                        "Uruguay", "Brasil", "Argentina", 
+                        "Rep. Dom.", "Jamaica")
+table(lapop$pais)
 crosstab(lapop$pais, lapop$year, weight=lapop$weight1500, plot=F)
-
-lapop18 <- subset(lapop, wave==2018)
 
 tab.jc15ar <- as.data.frame(compmeans(lapop18$jc15ar, lapop18$pais, lapop18$weight1500, plot=FALSE))
 tab.jc15ar
@@ -36,9 +36,7 @@ colnames(tab.jc15ar) <- varnames
 tab.jc15ar$pais <- row.names(tab.jc15ar)
 tab.jc15ar$err.st <- tab.jc15ar$sd/sqrt(tab.jc15ar$n)
 tab.jc15ar$ci <- tab.jc15ar$err.st*1.96
-tab.jc15ar <- tab.jc15ar[-21, ]
-tab.jc15ar <- tab.jc15ar[-16, ]
-tab.jc15ar <- tab.jc15ar[-18, ]
+tab.jc15ar <- tab.jc15ar[-19, ]
 tab.jc15ar
 
 graf035_1 <- ggplot(tab.jc15ar, aes(x=reorder(pais, media), y=media)) +
@@ -51,7 +49,7 @@ graf035_1 <- ggplot(tab.jc15ar, aes(x=reorder(pais, media), y=media)) +
 graf035_1
 
 #Seleccionando solo los años 2018 y 2019 en un nuevo dataframe#
-peru <- subset(lapop, year>=2010 & pais=="Perú")
+peru <- import("Peru reduced.dta")
 
 tab.peru <- as.data.frame(compmeans(peru$jc15ar, peru$year, peru$weight1500, plot=FALSE))
 colnames(tab.peru) <- varnames

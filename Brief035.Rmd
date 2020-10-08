@@ -1,6 +1,6 @@
 ---
 title: ' TALLER: UNA GUÍA PRÁCTICA PARA USAR LOS DATOS DEL BARÓMETRO DE LAS AMÉRICAS '
-author: "Arturo Maldonado"
+author: "Arturo Maldonado - Pontificia Universidad Católica del Perú"
 date: "22/09/2020"
 output:
   pdf_document: default
@@ -9,6 +9,7 @@ output:
 
 # REPLICACIÓN DEL TOPICAL BRIEF 035 
 # Tolerancia a los "golpes de Estado" ejecutivos en Perú
+# Autoras: Mariana V. Ramírez Bustamante y Elizabeth J. Zechmeister - Vanderbilt University 
 
 ## ABSTRACT
 
@@ -48,23 +49,22 @@ Finalmente el dataframe "lapop"  incluye solo la ronda 2016/17 y los países de 
 
 ```{r eval=FALSE, include=FALSE}
 lapopmerge <- import("LAPOP_Merge_2004_2018.dta")
-lapop <- subset(lapopmerge, wave==2016)
-lapop <- subset(lapop, pais<=23 | pais>=40)
-rm(lapopmerge)
 ```
-Como en este taller estamos trabajando con la versión simplificada de la base de datos, directamente leemos esta base de datos en RStudio.
+En este taller vamos a trabajar con una versión simplificada de la base de datos, que incluye solo las variables necesarias para el análisis. Esta base reducida directamente la leemos en RStudio y seleccionamos la ronda de trabajo.
 ```{r}
-lapop <- import("LAPOP_merge_reduced.dta")
+lapop <- import("LAPOP_reduced_merge.dta")
+lapop <- subset(lapop, wave==2018)
+lapop <- subset(lapop, pais<=23)
 ```
-Esta base de datos solo contiene el grupo de variables necesarias para este análisis para todas las rondas y todos los países. El análisis para el gráfico 1 incluye a todos los países y el análisis del gráfico 2 incluye todas las rondas para Perú.
+El análisis para el gráfico 1 incluye a todos los países y el análisis del gráfico 2 incluye todas las rondas para Perú.
 Al momento de leer la base de datos en R, este programa importa las variables como numéricas. La variable "pais" se tiene que convertir en una variable de tipo "factor" y se tiene que etiquetar.
 ```{r}
 lapop$pais = as.factor(lapop$pais)
 levels(lapop$pais) <- c("México", "Guatemala", "El Salvador", "Honduras",
                         "Nicaragua","Costa Rica", "Panamá", "Colombia", 
                         "Ecuador", "Bolivia", "Perú", "Paraguay", "Chile",
-                        "Uruguay", "Brasil", "Venezuela", "Argentina", 
-                        "Rep. Dom.", "Haití", "Jamaica")
+                        "Uruguay", "Brasil", "Argentina", 
+                        "Rep. Dom.", "Jamaica")
 table(lapop$pais)
 ```
 ___
@@ -72,14 +72,10 @@ ___
 La autora indica que para este reporte se ha usado la pregunta: JC15A: ¿Cree usted que cuando el país enfrenta momentos muy difíciles, se justifica que el presidente del país cierre el Congreso y gobierne sin Congreso? 
 + (1) Sí se justifica
 + (2) No se justifica 
-Esta variable se analiza para la ronda 2018, por lo que se seleccionan estas observaciones en un nuevo dataframe "lapop18".
-```{r}
-lapop18 <- subset(lapop, wave==2018)
-```
 Esta base de datos ya cuenta con una variable recodificada llamada "jc15ar", de tal manera que 1=100 y 2=0. 
 Con el siguiente código se calcula la media de esta variable recodificada por cada país, tomando en cuenta la ponderación por país. Estos datos se guardan en un nuevo dataframe "tab.jc15ar".
 ```{r}
-tab.jc15ar <- as.data.frame(compmeans(lapop18$jc15ar, lapop18$pais, lapop18$weight1500, plot=FALSE))
+tab.jc15ar <- as.data.frame(compmeans(lapop$jc15ar, lapop$pais, lapop$weight1500, plot=FALSE))
 tab.jc15ar
 ```
 En este dataframe, se cambian los nombres de las columnas, se agrega una nueva columna "pais", se calcula el error estándar y el margen de error y se eliminan las filas sin datos y de total.
@@ -89,9 +85,7 @@ colnames(tab.jc15ar) <- varnames
 tab.jc15ar$pais <- row.names(tab.jc15ar)
 tab.jc15ar$err.st <- tab.jc15ar$sd/sqrt(tab.jc15ar$n)
 tab.jc15ar$ci <- tab.jc15ar$err.st*1.96
-tab.jc15ar <- tab.jc15ar[-21, ]
-tab.jc15ar <- tab.jc15ar[-16, ]
-tab.jc15ar <- tab.jc15ar[-18, ]
+tab.jc15ar <- tab.jc15ar[-19, ]
 tab.jc15ar
 ```
 Con estos datos en el dataframe se usa el siguiente código para producir el gráfico 1.
@@ -108,9 +102,9 @@ graf035_1
 
 ___
 ## GRÁFICO 2
-Para producir el gráfico 2 se tiene que seleccionar las observaciones de Perú para los años 2010 en adelante.
+Para producir el gráfico 2 se va a trabajar con la base de datos de Perú para todas las rondas. La base de datos con la que se trabajará en este taller es una reducida, que solo incluye las variables necesarias para este análisis.
 ```{r}
-peru <- subset(lapop, year>=2010 & pais=="Perú")
+peru <- import("Peru reduced.dta")
 ```
 Con este dataframe se calcula el promedio de la variable "jc15ar" por año y se guarda en un nuevo dataframe "tab.peru".
 ```{r}

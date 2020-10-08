@@ -1,23 +1,16 @@
 *Do-file para replicar Insights 142*
+*Confianza en los medios de comunicación en las Américas*
+
 *Se trabajará con el Grand Merge*
 
 *cambiar ruta de acuerdo al directorio donde haya guardado el archivo del Grand Merge*
-use "C:\ruta\Grand Merge.dta" 
+use "C:\ruta\Grand_Merge.dta" 
 
 *Definir lenguaje a español*
 lab lang es
 
 *Para seleccionar solo los datos de la ronda 2016/17*
 drop if wave!=2016
-
-*Función para recodificar variables*
-program rescale
- args oldvar newmin newmax
- qui sum `oldvar'
- local oldmin=r(min)
- local rangequota=(`newmax'-`newmin')/(r(max)-r(min))
- replace `oldvar'=(`oldvar'-`oldmin')*`rangequota'+`oldmin'+(`newmin'-`oldmin')
-end
 
 *Recodificación de variables*
 
