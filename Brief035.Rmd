@@ -1,8 +1,10 @@
 ---
-title: " TALLER: UNA GUÍA PRÁCTICA PARA USAR LOS DATOS DEL BARÓMETRO DE LAS AMÉRICAS "
+title: ' TALLER: UNA GUÍA PRÁCTICA PARA USAR LOS DATOS DEL BARÓMETRO DE LAS AMÉRICAS '
 author: "Arturo Maldonado"
 date: "22/09/2020"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 # REPLICACIÓN DEL TOPICAL BRIEF 035 

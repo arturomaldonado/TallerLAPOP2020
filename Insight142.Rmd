@@ -1,12 +1,14 @@
 ---
-title: " TALLER: UNA GUÍA PRÁCTICA PARA USAR LOS DATOS DEL BARÓMETRO DE LAS AMÉRICAS "
-author: "Arturo Maldonado"
+title: ' TALLER: UNA GUÍA PRÁCTICA PARA USAR LOS DATOS DEL BARÓMETRO DE LAS AMÉRICAS '
+author: "Arturo Maldonado - Pontificia Universidad Católica del Perú"
 date: "22/09/2020"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 # REPLICACIÓN DEL INSIGHTS 142
-# ¿QUIÉNES CONFÍAN EN LOS MEDIOS EN LAS AMÉRICAS?
+# ¿QUIÉNES CONFÍAN EN LOS MEDIOS DE COMUNICACIÓN EN LAS AMÉRICAS?
 
 ## ABSTRACT
 
@@ -49,7 +51,8 @@ rm(lapopmerge)
 ```
 Como en este taller estamos trabajando con la versión simplificada de la base de datos, directamente leemos esta base de datos en RStudio
 ```{r}
-lapop <- import("lapop16.dta")
+lapop <- import("LAPOP_reduced_merge.dta")
+lapop <- subset(lapop, wave==2016)
 ```
 La autora indica que para este reporte se ha usado la pregunta: B37: ¿Hasta qué punto tiene usted confianza en los medios de comunicación? 
 
@@ -116,13 +119,13 @@ tab.b37r
 ```
 Con este dataframe se puede producir el gráfico con los datos ponderados.
 ```{r}
-graf1_pond <- ggplot(tab.b37r, aes(x=reorder(pais, media), y=media)) +
+graf142_1 <- ggplot(tab.b37r, aes(x=reorder(pais, media), y=media)) +
   geom_bar(width=0.5, fill="purple", colour="black", stat="identity")+
   geom_errorbar(aes(ymin=media-ci, ymax=media+ci), width=0.2)+
   geom_text(aes(label=paste(round(media, 1), "%")), hjust=-0.8, size=2)+
   xlab("") + ylab("Confianza en los medios de comunicación (%)")+
   coord_flip()
-graf1_pond
+graf142_1
 ```
 
 # FACTORES SOCIODEMOGRÁFICOS Y CONFIANZA EN LOS MEDIOS DE COMUNICACIÓN
@@ -146,18 +149,18 @@ lapop.design<-svydesign(ids =~upm, strata =~ estratopri, weights = ~weight1500, 
 ```
 El modelo de regresión incluye variables dummy por país, aunque no se mostrarán en el gráfico. Para calcular los coeficientes tomando en cuenta el diseño muestral, se usa el comando "svyglm". Se guardan los resultados en un objeto "modelo1.pond".
 ```{r}
-modelo1.pond <- svyglm(b37 ~ mujer + edrr + size +
+modelo142_1 <- svyglm(b37 ~ mujer + edrr + size +
                         edadr + tono + nse + factor(pais), design=lapop.design)
-modelo1.pond
+modelo142_1
 ```
 Para visualizar mejor los resultados, podemos usar el siguiente código:
 ```{r}
 library(jtools) # Para poder usar el comando siguiente
-export_summs(modelo1.pond)
+export_summs(modelo142_1)
 ```
 Para reproducir el gráfico 2, podemos usar el siguiente código:
 ```{r}
-plot_summs(modelo1.pond, coefs=c("Mujer" = "mujer", 
+plot_summs(modelo142_1, coefs=c("Mujer" = "mujer", 
                                  "Nivel de educación" = "edrr", 
                                  "Tamaño del lugar" = "size", 
                                  "Cohortes de edad" = "edadr",
@@ -333,19 +336,19 @@ lapop.design<-svydesign(ids =~upm, strata =~ estratopri, weights = ~weight1500, 
 ```
 Luego de la recodificación, se corre el modelo y se guardan los resultados en el objeto "modelo2.pond".
 ```{r}
-modelo2.pond <- svyglm(b37 ~ it1r + q5a01 + newsattn + useinternet + 
+modelo142_2 <- svyglm(b37 ~ it1r + q5a01 + newsattn + useinternet + 
                          polinterest + idpty + satisdem + votewinner + 
                          tono + edrr + edadr + size + nse + mujer +
                          factor(pais), design=lapop.design)
-modelo2.pond
+modelo142_2
 ```
 Para visualizar mejor los resultados, podemos usar el siguiente código. Incluso se puede comparar ambos modelos:
 ```{r}
-export_summs(modelo1.pond, modelo2.pond)
+export_summs(modelo142_1, modelo142_2)
 ```
 Para reproducir el gráfico 2, podemos usar el siguiente código:
 ```{r}
-plot_summs(modelo2.pond, coefs=c("Confianza interpersonal" = "it1r", 
+plot_summs(modelo142_2, coefs=c("Confianza interpersonal" = "it1r", 
                             "Asiste servicios religiosos" = "q5a01", 
                             "Presta atención a las noticias" = "newsattn", 
                             "Usa internet diariamente" = "useinternet",
