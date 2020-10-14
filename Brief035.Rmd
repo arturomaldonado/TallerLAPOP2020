@@ -47,7 +47,7 @@ Se carga la base de datos en STATA en R en un dataframe "lapopmerge". Tenga en c
 Luego, también se elimina las observaciones de los países que no se analizan en este reporte por no tener datos de la variable sobre medios de comunicación. Se elimina el dataframe del Merge original. 
 Finalmente el dataframe "lapop"  incluye solo la ronda 2016/17 y los países de análisis.
 
-```{r eval=FALSE, include=FALSE}
+```{r echo=TRUE, eval=FALSE, include=FALSE}
 lapopmerge <- import("LAPOP_Merge_2004_2018.dta")
 ```
 En este taller vamos a trabajar con una versión simplificada de la base de datos, que incluye solo las variables necesarias para el análisis. Esta base reducida directamente la leemos en RStudio y seleccionamos la ronda de trabajo.
@@ -70,15 +70,15 @@ table(lapop$pais)
 ___
 ## GRÁFICO 1
 La autora indica que para este reporte se ha usado la pregunta: JC15A: ¿Cree usted que cuando el país enfrenta momentos muy difíciles, se justifica que el presidente del país cierre el Congreso y gobierne sin Congreso? 
-+ (1) Sí se justifica
-+ (2) No se justifica 
+1. Sí se justifica
+2. No se justifica 
 Esta base de datos ya cuenta con una variable recodificada llamada "jc15ar", de tal manera que 1=100 y 2=0. 
 Con el siguiente código se calcula la media de esta variable recodificada por cada país, tomando en cuenta la ponderación por país. Estos datos se guardan en un nuevo dataframe "tab.jc15ar".
 ```{r}
 tab.jc15ar <- as.data.frame(compmeans(lapop$jc15ar, lapop$pais, lapop$weight1500, plot=FALSE))
 tab.jc15ar
 ```
-En este dataframe, se cambian los nombres de las columnas, se agrega una nueva columna "pais", se calcula el error estándar y el margen de error y se eliminan las filas sin datos y de total.
+En este dataframe, se cambian los nombres de las columnas, se agrega una nueva columna "pais", se calcula el error estándar y el margen de error y se eliminan la fila de total.
 ```{r}
 varnames <- c("media", "n", "sd")
 colnames(tab.jc15ar) <- varnames

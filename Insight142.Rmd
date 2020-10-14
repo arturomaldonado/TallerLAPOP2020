@@ -39,12 +39,12 @@ library(descr) # Para poder usar la función crosstab y compmeans
 ```
 
 ## LEYENDO LA BASE DE DATOS EN R
-*Si se trabajara con la base de datos descargada del repositorio de LAPOP*
+###Si se trabajara con la base de datos descargada del repositorio de LAPOP
 
-Se carga la base de datos en STATA en R en un dataframe "lapopmerge". Tenga en cuenta que la base de datos tiene que estar en su directorio de trabajo (working directory). Para este Insights se analiza la ronda 2016/17, por lo que se selecciona esta ronda en el merge total. Se crea un nuevo dataframe "lapop".
+Se carga la base de datos de STATA en R en un dataframe "lapopmerge". Tenga en cuenta que la base de datos tiene que estar en su directorio de trabajo (working directory). Para este Insights se analiza la ronda 2016/17, por lo que se selecciona esta ronda en el merge total. Se crea un nuevo dataframe "lapop".
 Luego, también se elimina las observaciones de los países que no se analizan en este reporte por no tener datos de la variable sobre medios de comunicación. Se elimina el dataframe del Merge original. 
 Finalmente el dataframe "lapop"  incluye solo la ronda 2016/17 y los países de análisis.
-```{r eval=FALSE, include=FALSE}
+```{r eval=FALSE}
 lapopmerge <- import("LAPOP_Merge_2004_2018.dta")
 lapop <- subset(lapopmerge, wave==2016)
 lapop <- subset(lapop, pais<=23 | pais>=40)
@@ -83,7 +83,7 @@ Para tomar en cuenta esta ponderación se puede usar, por ejemplo, el siguiente 
 crosstab(lapop$pais, lapop$year, weight=lapop$weight1500, plot=F)
 ```
 
-*Sin tomar en cuenta el efecto de diseño*
+_Sin tomar en cuenta el efecto de diseño_
 
 Para reproducir el gráfico 1 sin tomar en cuenta el efecto de diseño, se calculan los datos de % e intervalos de confianza de la variable b37r por cada país y se guarda en un objeto "df"
 ```{r}
@@ -101,14 +101,14 @@ graf1 <- ggplot(df, aes(x=reorder(pais, b37r), y=b37r)) +
 graf1
 ```
 
-*Para tomar en cuenta el efecto de diseño*
+_Para tomar en cuenta el efecto de diseño_
 
 Para reproducir el gráfico 1, tomando en cuenta el diseño muestral se tiene que seguir el siguiente código para la creación de un objeto con los datos ponderados. Este código permite incluir la variable "weight1500".
 ```{r}
 tab.b37r <- as.data.frame(compmeans(lapop$b37r, lapop$pais, lapop$weight1500, plot=FALSE))
 tab.b37r
 ```
-Luego, este dataframe se tiene que adecuar para poder producir el gráfico. Se cambia el nombre de las variables y se agregan los datos de "pais", "error estándar" y "intervalo de confianza". También se elimina la fila 23 "Total" que produce el código anterior.
+Luego, este dataframe se tiene que adecuar para poder producir el gráfico. Se cambia el nombre de las columnas y se agregan los datos de "pais", "error estándar" e "intervalo de confianza". También se elimina la fila 23 "Total" que produce el código anterior.
 ```{r}
 varnames <- c("media", "n", "sd")
 colnames(tab.b37r) <- varnames
@@ -148,7 +148,7 @@ Luego de recodificar las variables, se tiene que correr el modelo usando como va
 library(survey) # Para poder definir las características del diseño muestral
 lapop.design<-svydesign(ids =~upm, strata =~ estratopri, weights = ~weight1500, nest=TRUE, data=lapop)
 ```
-El modelo de regresión incluye variables dummy por país, aunque no se mostrarán en el gráfico. Para calcular los coeficientes tomando en cuenta el diseño muestral, se usa el comando "svyglm". Se guardan los resultados en un objeto "modelo1.pond".
+El modelo de regresión incluye variables dummy por país, aunque no se mostrarán en el gráfico. Para calcular los coeficientes tomando en cuenta el diseño muestral, se usa el comando "svyglm". Se guardan los resultados en un objeto "modelo142_1".
 ```{r}
 modelo142_1 <- svyglm(b37 ~ mujer + edrr + size +
                         edadr + tono + nse + factor(pais), design=lapop.design)
@@ -186,7 +186,7 @@ lapop$polinterest <- (4 - lapop$pol1) / 3
 lapop$idpty <- recode(lapop$vb10, "1=1; 2=0")
 lapop$voted <- recode(lapop$vb2, "1=1; 2=0")
 ```
-Se crea una variable "votewinner" que recodifica a aquellos que votaron al candidato ganador de la última elección presidencial.
+Se crea una variable "votewinner" que recodifica a aquellos que votaron al candidato ganador de la última elección presidencial en cada país. Esta variable se reconstruye recodificando la variable vb3n_16, que recoge el voto reportado por cada entrevistado en cada país.
 ```{r}
 lapop$votewinner <- NA
 lapop <- within(lapop, {
@@ -335,7 +335,7 @@ Se tiene que volver a calcular el efecto de diseño muestral para que incluya a 
 ```{r}
 lapop.design<-svydesign(ids =~upm, strata =~ estratopri, weights = ~weight1500, nest=TRUE, data=lapop)
 ```
-Luego de la recodificación, se corre el modelo y se guardan los resultados en el objeto "modelo2.pond".
+Luego de la recodificación, se corre el modelo y se guardan los resultados en el objeto "modelo42_2".
 ```{r}
 modelo142_2 <- svyglm(b37 ~ it1r + q5a01 + newsattn + useinternet + 
                          polinterest + idpty + satisdem + votewinner + 

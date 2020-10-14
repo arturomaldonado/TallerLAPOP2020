@@ -398,8 +398,12 @@ library(descr) # Para poder usar la función crosstab y compmeans</code></pre>
 </div>
 <div id="leyendo-la-base-de-datos-en-r" class="section level2">
 <h2>LEYENDO LA BASE DE DATOS EN R</h2>
-<p><em>Si se trabajara con la base de datos descargada del repositorio de LAPOP</em></p>
-<p>Se carga la base de datos en STATA en R en un dataframe “lapopmerge”. Tenga en cuenta que la base de datos tiene que estar en su directorio de trabajo (working directory). Para este Insights se analiza la ronda 2016/17, por lo que se selecciona esta ronda en el merge total. Se crea un nuevo dataframe “lapop”. Luego, también se elimina las observaciones de los países que no se analizan en este reporte por no tener datos de la variable sobre medios de comunicación. Se elimina el dataframe del Merge original. Finalmente el dataframe “lapop” incluye solo la ronda 2016/17 y los países de análisis.</p>
+<p>###Si se trabajara con la base de datos descargada del repositorio de LAPOP</p>
+<p>Se carga la base de datos de STATA en R en un dataframe “lapopmerge”. Tenga en cuenta que la base de datos tiene que estar en su directorio de trabajo (working directory). Para este Insights se analiza la ronda 2016/17, por lo que se selecciona esta ronda en el merge total. Se crea un nuevo dataframe “lapop”. Luego, también se elimina las observaciones de los países que no se analizan en este reporte por no tener datos de la variable sobre medios de comunicación. Se elimina el dataframe del Merge original. Finalmente el dataframe “lapop” incluye solo la ronda 2016/17 y los países de análisis.</p>
+<pre class="r"><code>lapopmerge &lt;- import(&quot;LAPOP_Merge_2004_2018.dta&quot;)
+lapop &lt;- subset(lapopmerge, wave==2016)
+lapop &lt;- subset(lapop, pais&lt;=23 | pais&gt;=40)
+rm(lapopmerge)</code></pre>
 <p>En este taller vamos a trabajar con una versión simplificada de la base de datos, que incluye solo las variables necesarias para el análisis. Esta base reducida directamente la leemos en RStudio y seleccionamos la ronda de trabajo.</p>
 <pre class="r"><code>lapop &lt;- import(&quot;LAPOP_reduced_merge.dta&quot;)
 lapop &lt;- subset(lapop, wave==2016)</code></pre>
@@ -567,7 +571,7 @@ graf1</code></pre>
 ## Estados Unidos 29.76783  1496  45.73902
 ## Canada         43.72953  1500  49.62180
 ## Total          50.39250 32328  49.99923</code></pre>
-<p>Luego, este dataframe se tiene que adecuar para poder producir el gráfico. Se cambia el nombre de las variables y se agregan los datos de “pais”, “error estándar” y “intervalo de confianza”. También se elimina la fila 23 “Total” que produce el código anterior.</p>
+<p>Luego, este dataframe se tiene que adecuar para poder producir el gráfico. Se cambia el nombre de las columnas y se agregan los datos de “pais”, “error estándar” e “intervalo de confianza”. También se elimina la fila 23 “Total” que produce el código anterior.</p>
 <pre class="r"><code>varnames &lt;- c(&quot;media&quot;, &quot;n&quot;, &quot;sd&quot;)
 colnames(tab.b37r) &lt;- varnames
 tab.b37r$pais &lt;- row.names(tab.b37r)
@@ -631,7 +635,7 @@ lapop$nse &lt;- (lapop$quintall-1)/4</code></pre>
 ## 
 ##     dotchart</code></pre>
 <pre class="r"><code>lapop.design&lt;-svydesign(ids =~upm, strata =~ estratopri, weights = ~weight1500, nest=TRUE, data=lapop)</code></pre>
-<p>El modelo de regresión incluye variables dummy por país, aunque no se mostrarán en el gráfico. Para calcular los coeficientes tomando en cuenta el diseño muestral, se usa el comando “svyglm”. Se guardan los resultados en un objeto “modelo1.pond”.</p>
+<p>El modelo de regresión incluye variables dummy por país, aunque no se mostrarán en el gráfico. Para calcular los coeficientes tomando en cuenta el diseño muestral, se usa el comando “svyglm”. Se guardan los resultados en un objeto “modelo142_1”.</p>
 <pre class="r"><code>modelo142_1 &lt;- svyglm(b37 ~ mujer + edrr + size +
                         edadr + tono + nse + factor(pais), design=lapop.design)
 modelo142_1</code></pre>
@@ -812,7 +816,7 @@ lapop$newsattn &lt;- (5 - lapop$gi0) / 4
 lapop$polinterest &lt;- (4 - lapop$pol1) / 3
 lapop$idpty &lt;- recode(lapop$vb10, &quot;1=1; 2=0&quot;)
 lapop$voted &lt;- recode(lapop$vb2, &quot;1=1; 2=0&quot;)</code></pre>
-<p>Se crea una variable “votewinner” que recodifica a aquellos que votaron al candidato ganador de la última elección presidencial.</p>
+<p>Se crea una variable “votewinner” que recodifica a aquellos que votaron al candidato ganador de la última elección presidencial en cada país. Esta variable se reconstruye recodificando la variable vb3n_16, que recoge el voto reportado por cada entrevistado en cada país.</p>
 <pre class="r"><code>lapop$votewinner &lt;- NA
 lapop &lt;- within(lapop, {
                 votewinner[vb2==2] &lt;- 0
@@ -960,7 +964,7 @@ table(lapop$votewinner)</code></pre>
 ## 17836 11024</code></pre>
 <p>Se tiene que volver a calcular el efecto de diseño muestral para que incluya a estas variables recodificadas.</p>
 <pre class="r"><code>lapop.design&lt;-svydesign(ids =~upm, strata =~ estratopri, weights = ~weight1500, nest=TRUE, data=lapop)</code></pre>
-<p>Luego de la recodificación, se corre el modelo y se guardan los resultados en el objeto “modelo2.pond”.</p>
+<p>Luego de la recodificación, se corre el modelo y se guardan los resultados en el objeto “modelo42_2”.</p>
 <pre class="r"><code>modelo142_2 &lt;- svyglm(b37 ~ it1r + q5a01 + newsattn + useinternet + 
                          polinterest + idpty + satisdem + votewinner + 
                          tono + edrr + edadr + size + nse + mujer +

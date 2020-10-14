@@ -420,7 +420,7 @@ table(lapop$pais)</code></pre>
 </div>
 <div id="gráfico-1" class="section level2">
 <h2>GRÁFICO 1</h2>
-<p>La autora indica que para este reporte se ha usado la pregunta: JC15A: ¿Cree usted que cuando el país enfrenta momentos muy difíciles, se justifica que el presidente del país cierre el Congreso y gobierne sin Congreso? + (1) Sí se justifica + (2) No se justifica Esta base de datos ya cuenta con una variable recodificada llamada “jc15ar”, de tal manera que 1=100 y 2=0. Con el siguiente código se calcula la media de esta variable recodificada por cada país, tomando en cuenta la ponderación por país. Estos datos se guardan en un nuevo dataframe “tab.jc15ar”.</p>
+<p>La autora indica que para este reporte se ha usado la pregunta: JC15A: ¿Cree usted que cuando el país enfrenta momentos muy difíciles, se justifica que el presidente del país cierre el Congreso y gobierne sin Congreso? 1. Sí se justifica 2. No se justifica Esta base de datos ya cuenta con una variable recodificada llamada “jc15ar”, de tal manera que 1=100 y 2=0. Con el siguiente código se calcula la media de esta variable recodificada por cada país, tomando en cuenta la ponderación por país. Estos datos se guardan en un nuevo dataframe “tab.jc15ar”.</p>
 <pre class="r"><code>tab.jc15ar &lt;- as.data.frame(compmeans(lapop$jc15ar, lapop$pais, lapop$weight1500, plot=FALSE))</code></pre>
 <pre><code>## Warning in compmeans(lapop$jc15ar, lapop$pais, lapop$weight1500, plot = FALSE):
 ## 11367 rows with missing values dropped</code></pre>
@@ -445,7 +445,7 @@ table(lapop$pais)</code></pre>
 ## Rep. Dom.   24.305061  1388  42.90800
 ## Jamaica     23.959828   691  42.71475
 ## Total       23.843688 16069  42.61409</code></pre>
-<p>En este dataframe, se cambian los nombres de las columnas, se agrega una nueva columna “pais”, se calcula el error estándar y el margen de error y se eliminan las filas sin datos y de total.</p>
+<p>En este dataframe, se cambian los nombres de las columnas, se agrega una nueva columna “pais”, se calcula el error estándar y el margen de error y se eliminan la fila de total.</p>
 <pre class="r"><code>varnames &lt;- c(&quot;media&quot;, &quot;n&quot;, &quot;sd&quot;)
 colnames(tab.jc15ar) &lt;- varnames
 tab.jc15ar$pais &lt;- row.names(tab.jc15ar)
