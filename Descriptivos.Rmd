@@ -1,0 +1,85 @@
+---
+title: "Estadística descriptiva con datos del Barómetro de las Américas por LAPOP (1)"
+author: "Arturo Maldonado"
+date: "23/11/2020"
+output: html_document
+---
+En este documento empezaremos con los aspectos básicos de cómo usar una base de datos de opinión pública para fines estadísticos. 
+En primer lugar, veremos aspectos básicos de cómo describir una variable y cómo graficarla. Para eso, vamos a usar el último informe regional "El pulso de la democracia", disponible [aquí](https://www.vanderbilt.edu/lapop/ab2018/2018-19_AmericasBarometer_Regional_Report_Spanish_W_03.27.20.pdf), donde se presentan los principales hallazgos de la ronda 2018/19 del Barómetro de las Américas. 
+Una de las secciones de este informe, reporta los datos sobre redes sociales y actitudes políticas. En esta sección, se presentan datos sobre el uso de internet y el uso de redes sociales, en general y por país. Con los datos del Barómetro de las Américas se puede saber el % de hogares con celulares, con internet, así como el % de personas que usa Whatsapp, Facebook o Twitter. En este documento vamos a reproducir estos resultados.
+
+## SOBRE LA BASE DE DATOS
+Los datos que vamos a usar deben citarse de la siguiente manera:
+Fuente: Barómetro de las Américas por el Proyecto de Opinión Pública de América Latina (LAPOP), wwww.LapopSurveys.org.
+Pueden descargar los datos de manera libre  [aquí](http://datasets.americasbarometer.org/database/login.php)
+En este enlace, se puede registrar o entrar como "Free User". En el buscador, se puede ingresar el texto "merge". Ahí se tendrá acceso a la base de datos completa "2004-2018 Grand Merge Free" en versión para STATA. Se descarga la base de datos en formato zip, la que se descomprime en formato .dta.
+Una vez descargada y guardada en el directorio de trabajo, se tiene que leer la base de datos como un objeto dataframe en R. Adicionalmente, el reporte no incluye a EE.UU. y a Canadá. Se usa el comando `subset` para filtrar las observaciones de estos países.
+
+```{r base, echo=TRUE}
+lapop <- subset(lapop, pais<=35)
+```
+
+Las variables con las que se trabajará son: SMEDIA1. ¿Tiene usted cuenta de Facebook?; SMEDIA4. ¿Tiene usted cuenta de Twitter?; SMEDIA7. ¿Tiene usted cuenta de Whatsapp?. Estas preguntas tienen como opciones:
+1. Sí
+2. No
+Al momento de leer la base de datos en R, este programa importa las variables como numéricas. Estas variables se tienen que convertir a variables de tipo "factor" y las guardamos en una nueva variable.
+```{r factor}
+lapop$smedia1r = as.factor(lapop$smedia1)
+lapop$smedia4r = as.factor(lapop$smedia4)
+lapop$smedia7r = as.factor(lapop$smedia7)
+```
+
+Y luego se tienen que etiquetar.
+```{r etiqueta}
+levels(lapop$smedia1r) <- c("Sí", "No")
+levels(lapop$smedia4r) <- c("Sí", "No")
+levels(lapop$smedia7r) <- c("Sí", "No")
+```
+
+Con las variables listas, ahora procedemos a hacer las tablas generales.
+```{r tablas}
+table(lapop$smedia1r) #Facebook
+table(lapop$smedia4r) #Twitter
+table(lapop$smedia7r) #Whatsapp
+```
+
+El comando `table`nos devuelve las frecuencias absolutas de las variables. Para obtener las frecuencias relativas, usaremos:
+```{r}
+prop.table(table(lapop$smedia1r))
+prop.table(table(lapop$smedia4r))
+prop.table(table(lapop$smedia7r))
+```
+
+Sin embargo, el comando `prop.table` nos devuelve demasiados decimales. En general preferimos trabajar con los porcentajes (por eso se multiplica x100) y con 1 decimal (se usa el comando `round`).
+```{r tabla con USA y Canada}
+round(prop.table(table(lapop$smedia1r)), 3)*100
+round(prop.table(table(lapop$smedia4r)), 3)*100
+round(prop.table(table(lapop$smedia7r)), 3)*100
+```
+
+En la página 54 del reporte se observa que se reportan estos datos en forma gráfica, mediante un gráfico de sectores.
+```{r pie}
+pie(table(lapop$smedia1r))
+```
+
+Para tener más opciones gráficas, podemos usar el paquete `ggplot`. 
+```{r grafico}
+lapop<- lapop[!is.na(lapop$smedia1r), ]
+library(ggplot2)
+ggplot(data=lapop, aes(x=smedia1r))+
+  geom_bar(aes(y=..prop..*100, group=1), width=0.5)+
+  geom_text(aes(label='stat(prop)*100', group=1), stat='count')+
+  labs(title="¿Qué tan frecuente se usan las redes sociales", x="Usuario de Facebook", y="Porcentaje", caption="Barómetro de las Américas por LAPOP, 2018/19")+
+  coord_cartesian(ylim=c(0, 60))
+
+```
+
+
+## PARA REPRODUCIR LOS DATOS PONDERADOS
+
+Estos datos, sin embargo, no consideran el efecto de diseño. La ponderación de los datos se tiene que hacer incluyendo la variable "weight1500".
+```{r}
+round(prop.table(xtabs(weight1500~smedia1, data=lapop)), 3)*100
+round(prop.table(xtabs(weight1500~smedia4, data=lapop)), 3)*100
+round(prop.table(xtabs(weight1500~smedia7, data=lapop)), 3)*100
+```
